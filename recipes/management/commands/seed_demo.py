@@ -76,7 +76,7 @@ class Command(BaseCommand):
         User = get_user_model()
         user, created = User.objects.get_or_create(username="demo")
         if created:
-            user.set_password("PantryPilot123!")
+            user.set_password("Plantry123!")
             user.save()
         preference, _ = UserPreference.objects.get_or_create(user=user)
         preference.weekly_budget = Decimal("55.00")

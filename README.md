@@ -1,6 +1,6 @@
-# PantryPilot
+# Plantry
 
-PantryPilot is a full-stack Django meal-planning application that turns pantry inventory, dietary restrictions, allergies, nutrition goals, and a weekly budget into a practical menu. Discovery ranks recipes by pantry coverage and constraint fit; the weekly planner then consumes pantry quantities and estimates only the ingredients that still need to be purchased.
+Plantry is a full-stack Django meal-planning application that turns pantry inventory, dietary restrictions, allergies, nutrition goals, and a weekly budget into a practical menu. Discovery ranks recipes by pantry coverage and constraint fit; the weekly planner then consumes pantry quantities and estimates only the ingredients that still need to be purchased.
 
 ## Features
 
@@ -29,7 +29,7 @@ python manage.py runserver
 Open <http://127.0.0.1:8000>. The seed command creates a local demo account:
 
 - Username: `demo`
-- Password: `PantryPilot123!`
+- Password: `Plantry123!`
 
 The command is idempotent, so it is safe to rerun while developing. Create a superuser with `python manage.py createsuperuser` to edit ingredient pricing and allergen metadata through `/admin/`.
 
