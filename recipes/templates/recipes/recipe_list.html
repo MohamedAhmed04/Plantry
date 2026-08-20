@@ -1,30 +1,56 @@
-<!-- recipes/templates/recipes/recipe_list.html -->
 {% extends "recipes/base.html" %}
-{% load static %}
-
-{% block title %}Home - Recipe Sharing{% endblock %}
-
+{% block title %}Discover recipes · PantryPilot{% endblock %}
 {% block content %}
-<h1 class="mb-4">Latest Recipes</h1>
-<div class="row">
-    {% for item in ranked_recipes %}
-    {% with recipe=item.recipe %}
-    <div class="col-md-4">
-        <div class="card mb-4 shadow-sm">
-            {% if recipe.image_url %}
-            <img src="{{ recipe.image_url }}" class="card-img-top" alt="{{ recipe.title }}">
+<section class="hero-section">
+    <div class="container py-5 py-lg-6">
+        <div class="row align-items-end g-4">
+            <div class="col-lg-8">
+                <span class="eyebrow">Cook smarter this week</span>
+                <h1 class="display-3 mt-3 mb-3">Good meals start with<br><em>what you already have.</em></h1>
+                <p class="lead text-secondary mb-0 col-lg-9">Recipes ranked around your pantry, allergies, nutrition targets, and real weekly budget.</p>
+            </div>
+            {% if user.is_authenticated %}
+            <div class="col-lg-4 text-lg-end"><a class="btn btn-primary btn-lg" href="{% url 'meal_plan' %}">Build my weekly plan <span aria-hidden="true">→</span></a></div>
             {% endif %}
-            <div class="card-body">
-                <h5 class="card-title">{{ recipe.title }}</h5>
-                <p class="card-text">{{ recipe.description|truncatechars:100 }}</p>
-                <a href="{{ recipe.get_absolute_url }}" class="btn btn-primary">View Recipe</a>
-                <p>{{ item.pantry_overlap }}% pantry match · ${{ item.missing_cost }} to buy</p>
+        </div>
+    </div>
+</section>
+<section class="container py-5">
+    <div class="row g-4">
+        <aside class="col-lg-3">
+            <div class="filter-panel sticky-lg-top">
+                <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="h5 mb-0">Find your fit</h2><span class="small text-secondary">Ranked</span></div>
+                <form method="get" class="vstack gap-3">
+                    {% for field in filter_form %}<div class="{% if field.field.widget.input_type == 'checkbox' %}form-check{% endif %}">{{ field }}<label class="{% if field.field.widget.input_type == 'checkbox' %}form-check-label{% else %}form-label{% endif %}" for="{{ field.id_for_label }}">{{ field.label }}</label>{% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>{% endfor %}
+                    <button class="btn btn-dark w-100" type="submit">Apply filters</button>
+                    <a class="small text-center text-secondary" href="{% url 'recipe_list' %}">Reset</a>
+                </form>
+            </div>
+        </aside>
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-4"><div><span class="eyebrow">Personalized discovery</span><h2 class="h3 mt-2 mb-0">{{ ranked_recipes|length }} recipe{{ ranked_recipes|length|pluralize }}</h2></div></div>
+            <div class="row g-4">
+            {% for item in ranked_recipes %}
+                <div class="col-md-6">
+                    <article class="recipe-card h-100">
+                        <div class="recipe-visual {% cycle 'visual-sage' 'visual-gold' 'visual-coral' %}">
+                            {% if item.recipe.image_url %}<img src="{{ item.recipe.image_url }}" alt="" loading="lazy">{% else %}<span aria-hidden="true">{% cycle '🥬' '🍲' '🌮' %}</span>{% endif %}
+                            <span class="match-chip">{{ item.pantry_overlap }}% pantry match</span>
+                        </div>
+                        <div class="p-4">
+                            <div class="d-flex flex-wrap gap-2 mb-3">{% for label in item.recipe.dietary_labels %}<span class="tag">{{ label }}</span>{% endfor %}{% if not item.compatible %}<span class="tag tag-warn">Constraint conflict</span>{% endif %}</div>
+                            <h3 class="h4"><a class="stretched-link text-decoration-none text-dark" href="{{ item.recipe.get_absolute_url }}">{{ item.recipe.title }}</a></h3>
+                            <p class="text-secondary mb-4">{{ item.recipe.description|truncatechars:110 }}</p>
+                            <div class="recipe-meta"><span>{{ item.recipe.prep_minutes }} min</span><span>{{ item.recipe.calories_per_serving }} kcal</span><span>{{ item.recipe.protein_grams }}g protein</span></div>
+                            <div class="d-flex justify-content-between border-top pt-3 mt-3 small"><span class="text-secondary">Still to buy</span><strong>${{ item.missing_cost }}</strong></div>
+                        </div>
+                    </article>
+                </div>
+            {% empty %}
+                <div class="col-12"><div class="empty-state"><div class="display-5 mb-3">🥕</div><h3>No recipes fit those filters</h3><p class="text-secondary mb-0">Try widening the pantry match or purchase cost.</p></div></div>
+            {% endfor %}
             </div>
         </div>
     </div>
-    {% endwith %}
-    {% empty %}
-    <p>No recipes available yet.</p>
-    {% endfor %}
-</div>
+</section>
 {% endblock %}

@@ -10,9 +10,9 @@ from .models import Recipe, RecipeIngredient, UserPreference
 class BootstrapFormMixin:
     def _bootstrap(self):
         for field in self.fields.values():
-            if isinstance(field.widget, forms.CheckboxInput):
-                field.widget.attrs["class"] = "form-check-input"
-            elif isinstance(field.widget, forms.CheckboxSelectMultiple):
+            if isinstance(field.widget, forms.CheckboxSelectMultiple):
+                field.widget.attrs.pop("class", None)
+            elif isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs["class"] = "form-check-input"
             else:
                 field.widget.attrs["class"] = "form-control"

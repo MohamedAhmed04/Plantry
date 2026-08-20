@@ -1,16 +1,6 @@
-<!-- recipes/templates/recipes/add_recipe.html -->
 {% extends "recipes/base.html" %}
-{% load static %}
-
-{% block title %}Add Recipe - Recipe Sharing{% endblock %}
-
+{% block title %}Add a recipe · PantryPilot{% endblock %}
 {% block content %}
-<h1>Add a New Recipe</h1>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    {{ formset.management_form }}
-    {{ formset.as_p }}
-    <button type="submit" class="btn btn-success">Submit Recipe</button>
-</form>
+<section class="page-heading"><div class="container py-5"><span class="eyebrow">Grow the catalog</span><h1 class="display-5 mt-2">Add a recipe</h1><p class="text-secondary mb-0">Nutrition and normalized quantities make the recipe available to the planner.</p></div></section>
+<div class="container py-5"><form method="post" novalidate>{% csrf_token %}{{ form.non_field_errors }}<div class="form-card mb-4"><h2 class="h4 mb-4">Recipe details</h2><div class="row g-3">{% for field in form %}<div class="{% if field.field.widget.input_type == 'checkbox' %}col-sm-6 form-check ps-5{% else %}col-md-6{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>{% endfor %}</div></div><div class="form-card mb-4"><h2 class="h4">Planner quantities</h2><p class="text-secondary small">Quantities are for the full recipe and use each ingredient’s displayed canonical unit.</p>{{ formset.management_form }}{{ formset.non_form_errors }}<div class="row g-3">{% for line_form in formset %}<div class="col-12 border-top pt-3"><div class="row g-3">{% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}{% for field in line_form.visible_fields %}<div class="col-md-4"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}</div></div>{% endfor %}</div></div><button type="submit" class="btn btn-primary btn-lg">Publish recipe</button></form></div>
 {% endblock %}

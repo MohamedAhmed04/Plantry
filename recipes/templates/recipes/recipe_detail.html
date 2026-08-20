@@ -1,49 +1,6 @@
-<!-- recipes/templates/recipes/recipe_detail.html -->
 {% extends "recipes/base.html" %}
-{% load static %}
-
-{% block title %}{{ recipe.title }} - Recipe Sharing{% endblock %}
-
+{% block title %}{{ recipe.title }} · PantryPilot{% endblock %}
 {% block content %}
-<div class="card">
-    {% if recipe.image_url %}
-    <img src="{{ recipe.image_url }}" class="card-img-top" alt="{{ recipe.title }}">
-    {% endif %}
-    <div class="card-body">
-        <h2 class="card-title">{{ recipe.title }}</h2>
-        <p class="text-muted">Published on: {{ recipe.created_at|date:"F d, Y" }}</p>
-        <p class="card-text"><strong>Description:</strong> {{ recipe.description }}</p>
-        <hr>
-        <h4>Ingredients</h4>
-        <p>{{ recipe.ingredients|linebreaks }}</p>
-        <hr>
-        <h4>Instructions</h4>
-        <p>{{ recipe.instructions|linebreaks }}</p>
-        <a href="{% url 'recipe_list' %}" class="btn btn-secondary mt-3">Back to Recipes</a>
-    </div>
-</div>
-<!-- Container for the React "Like" Button -->
-<div id="likeButton" class="mt-3"></div>
-
-<!-- Include React and ReactDOM via CDN -->
-<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-<!-- Include Babel for JSX support in the browser -->
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-<!-- React Component Code -->
-<script type="text/babel">
-  function LikeButton() {
-    const [count, setCount] = React.useState(0);
-    return (
-      <button className="btn btn-success" onClick={() => setCount(count + 1)}>
-        Like ({count})
-      </button>
-    );
-  }
-  
-  // Render the LikeButton component into the container
-  ReactDOM.createRoot(document.getElementById('likeButton')).render(<LikeButton />);
-</script>
-
+<section class="detail-hero"><div class="container py-5"><a class="back-link" href="{% url 'recipe_list' %}">← Back to discovery</a><div class="row g-5 align-items-center mt-1"><div class="col-lg-7"><div class="d-flex flex-wrap gap-2 mb-3">{% for label in recipe.dietary_labels %}<span class="tag">{{ label }}</span>{% endfor %}</div><h1 class="display-4">{{ recipe.title }}</h1><p class="lead text-secondary">{{ recipe.description }}</p><div class="stat-row mt-4"><div><strong>{{ recipe.prep_minutes }}</strong><span>minutes</span></div><div><strong>{{ recipe.calories_per_serving }}</strong><span>calories</span></div><div><strong>{{ recipe.protein_grams }}g</strong><span>protein</span></div><div><strong>${{ recipe.cost_per_serving }}</strong><span>per serving</span></div></div></div><div class="col-lg-5"><div class="detail-visual">{% if recipe.image_url %}<img src="{{ recipe.image_url }}" alt="{{ recipe.title }}">{% else %}<span aria-hidden="true">🍽️</span>{% endif %}<span class="match-chip">{{ metrics.pantry_overlap }}% in your pantry</span></div></div></div></div></section>
+<section class="container py-5"><div class="row g-5"><div class="col-lg-5"><span class="eyebrow">For {{ recipe.servings }} servings</span><h2 class="mt-2 mb-4">Ingredients</h2><ul class="ingredient-list">{% for line in recipe.ingredient_lines.all %}<li><span>{{ line.ingredient.name }}{% if line.note %} <small>({{ line.note }})</small>{% endif %}</span><strong>{{ line.quantity|floatformat:-2 }} {{ line.ingredient.unit }}</strong></li>{% empty %}<li>{{ recipe.ingredients|linebreaksbr }}</li>{% endfor %}</ul></div><div class="col-lg-7"><span class="eyebrow">Method</span><h2 class="mt-2 mb-4">Make it</h2><div class="instructions">{{ recipe.instructions|linebreaks }}</div><div class="buy-card mt-4"><span>Estimated ingredients still to buy for one serving</span><strong>${{ metrics.missing_cost }}</strong></div></div></div></section>
 {% endblock %}
