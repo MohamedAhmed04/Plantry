@@ -1,0 +1,6 @@
+{% extends "recipes/base.html" %}
+{% block content %}
+<h1>My pantry</h1>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Save to pantry</button></form>
+<ul>{% for item in items %}<li>{{ item }} <form method="post" action="{% url 'pantry_delete' item.id %}">{% csrf_token %}<button type="submit">Remove</button></form></li>{% empty %}<li>Your pantry is empty.</li>{% endfor %}</ul>
+{% endblock %}

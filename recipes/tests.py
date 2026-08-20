@@ -3,8 +3,10 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
 
-from .models import Ingredient, Recipe, RecipeIngredient, UserPreference, WeeklyMealPlan
+from .forms import MealPlanGenerationForm, PreferenceForm
+from .models import Ingredient, PantryItem, Recipe, RecipeIngredient, UserPreference, WeeklyMealPlan
 from .services import PlanningError, compatibility_reasons, generate_plan, rank_recipes, recipe_metrics, solve_week
 
 
@@ -99,3 +101,85 @@ class SolverTests(RecipeFactoryMixin, TestCase):
         self.assertEqual(plan.id, same_plan.id)
         self.assertEqual(WeeklyMealPlan.objects.count(), 1)
         self.assertEqual(same_plan.meals.count(), 4)
+
+
+class FormValidationTests(TestCase):
+    def test_week_must_start_on_monday(self):
+        form = MealPlanGenerationForm({"week_start": "2026-08-25"})
+        self.assertFalse(form.is_valid())
+        self.assertIn("must be a Monday", form.errors["week_start"][0])
+
+    def test_budget_and_meal_count_have_bounds(self):
+        form = PreferenceForm({
+            "weekly_budget": "0", "meals_per_week": 15,
+            "meal_calorie_target": 600, "meal_protein_target": 25,
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn("weekly_budget", form.errors)
+        self.assertIn("meals_per_week", form.errors)
+
+
+class WebFlowTests(RecipeFactoryMixin, TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("webuser", password="testpass123")
+        self.preference = UserPreference.objects.create(user=self.user, weekly_budget=20, meals_per_week=3)
+        self.rice = Ingredient.objects.create(name="Rice", category="Pantry", unit_price=Decimal("0.01"))
+        for i in range(3):
+            self.make_recipe(f"Web recipe {i}", self.rice, protein=25 + i)
+
+    def test_discovery_is_public_and_contains_ranked_recipes(self):
+        response = self.client.get(reverse("recipe_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Web recipe 0")
+        self.assertContains(response, "0% pantry match")
+
+    def test_signup_creates_preferences_and_logs_user_in(self):
+        response = self.client.post(reverse("signup"), {"username": "newcook", "password1": "Longpass-2468", "password2": "Longpass-2468"})
+        self.assertRedirects(response, reverse("pantry"))
+        user = get_user_model().objects.get(username="newcook")
+        self.assertTrue(UserPreference.objects.filter(user=user).exists())
+        self.assertEqual(int(self.client.session["_auth_user_id"]), user.id)
+
+    def test_pantry_add_updates_existing_row_and_delete_is_user_scoped(self):
+        self.client.force_login(self.user)
+        self.client.post(reverse("pantry"), {"ingredient": self.rice.id, "quantity": "200"})
+        self.client.post(reverse("pantry"), {"ingredient": self.rice.id, "quantity": "300"})
+        item = PantryItem.objects.get(user=self.user, ingredient=self.rice)
+        self.assertEqual(item.quantity, Decimal("300"))
+        other = get_user_model().objects.create_user("other")
+        other_item = PantryItem.objects.create(user=other, ingredient=self.rice, quantity=1)
+        response = self.client.post(reverse("pantry_delete", args=[other_item.id]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_preferences_and_plan_generation_flow(self):
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("preferences"), {
+            "weekly_budget": "25", "meals_per_week": "3", "meal_calorie_target": "600",
+            "meal_protein_target": "25", "vegetarian": "on",
+        })
+        self.assertRedirects(response, reverse("preferences"))
+        response = self.client.post(reverse("meal_plan"), {"week_start": "2026-08-24"})
+        plan = WeeklyMealPlan.objects.get(user=self.user)
+        self.assertRedirects(response, reverse("meal_plan_week", kwargs={"week_start": "2026-08-24"}))
+        page = self.client.get(reverse("meal_plan_week", kwargs={"week_start": plan.week_start.isoformat()}))
+        self.assertContains(page, "Shopping estimate")
+        self.assertContains(page, "Meals planned")
+
+    def test_recipe_creation_requires_login_and_normalized_line(self):
+        self.assertRedirects(self.client.get(reverse("add_recipe")), f"{reverse('login')}?next={reverse('add_recipe')}")
+        self.client.force_login(self.user)
+        data = {
+            "title": "New recipe", "description": "A useful recipe", "ingredients": "Rice",
+            "instructions": "Cook it", "prep_minutes": 10, "servings": 2,
+            "calories_per_serving": 400, "protein_grams": 20, "carbs_grams": 50,
+            "fat_grams": 10, "is_vegetarian": "on", "is_vegan": "on",
+            "is_gluten_free": "on", "is_dairy_free": "on", "is_nut_free": "on",
+            "ingredient_lines-TOTAL_FORMS": "4", "ingredient_lines-INITIAL_FORMS": "0",
+            "ingredient_lines-MIN_NUM_FORMS": "1", "ingredient_lines-MAX_NUM_FORMS": "1000",
+            "ingredient_lines-0-ingredient": self.rice.id, "ingredient_lines-0-quantity": "100",
+            "ingredient_lines-0-note": "dry",
+        }
+        response = self.client.post(reverse("add_recipe"), data)
+        recipe = Recipe.objects.get(title="New recipe")
+        self.assertRedirects(response, recipe.get_absolute_url())
+        self.assertEqual(recipe.ingredient_lines.count(), 1)

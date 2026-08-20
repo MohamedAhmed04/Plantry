@@ -7,7 +7,8 @@
 {% block content %}
 <h1 class="mb-4">Latest Recipes</h1>
 <div class="row">
-    {% for recipe in recipes %}
+    {% for item in ranked_recipes %}
+    {% with recipe=item.recipe %}
     <div class="col-md-4">
         <div class="card mb-4 shadow-sm">
             {% if recipe.image_url %}
@@ -17,9 +18,11 @@
                 <h5 class="card-title">{{ recipe.title }}</h5>
                 <p class="card-text">{{ recipe.description|truncatechars:100 }}</p>
                 <a href="{{ recipe.get_absolute_url }}" class="btn btn-primary">View Recipe</a>
+                <p>{{ item.pantry_overlap }}% pantry match · ${{ item.missing_cost }} to buy</p>
             </div>
         </div>
     </div>
+    {% endwith %}
     {% empty %}
     <p>No recipes available yet.</p>
     {% endfor %}

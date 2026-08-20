@@ -9,6 +9,8 @@
 <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
+    {{ formset.management_form }}
+    {{ formset.as_p }}
     <button type="submit" class="btn btn-success">Submit Recipe</button>
 </form>
 {% endblock %}

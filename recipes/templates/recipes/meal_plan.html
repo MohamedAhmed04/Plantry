@@ -1,0 +1,6 @@
+{% extends "recipes/base.html" %}
+{% block content %}
+<h1>Weekly plan</h1>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Generate plan</button></form>
+{% if plan %}<h2>Shopping estimate: ${{ plan.estimated_cost }}</h2><p>Meals planned: {{ plan.meals.count }}</p>{% for day in days %}<h3>{{ day.date }}</h3>{% for meal in day.meals %}<a href="{{ meal.recipe.get_absolute_url }}">{{ meal.recipe.title }}</a>{% endfor %}{% endfor %}{% endif %}
+{% endblock %}
